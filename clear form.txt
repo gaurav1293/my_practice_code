@@ -1,0 +1,8 @@
+console.log(data);
+           if(data.ok){
+            alert(data.ok);
+           $('#w_name').val('');
+           $('#w_phone').val('');
+           $('#w_pin').val('');
+           $('#w_store').val('');  
+           }

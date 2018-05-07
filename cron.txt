@@ -1,0 +1,179 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: amitkumar
+ * Date: 4/27/18
+ * Time: 12:20 PM
+ */
+
+class clubcardReportsCron extends controller
+{
+    public function index(){
+        if (isset($_GET['token']) && $this->filter_input($_GET['token']) == '9130170088'){
+            $this->_getFrequency();
+        }else{
+            //$this->_notifyAdmin();
+        }
+    }
+
+    private function _getFrequency(){
+        $img_path = 'public/merchantlogos/250/';
+        $modal = $this->loadModel('clubcardDB');
+        if (isset($_GET['search']) && $this->filter_input($_GET['search']) == '1'){
+            $dailyReports = $modal->getEmailForDailyReports();
+            if ($dailyReports){
+              foreach ($dailyReports as $report){
+                $mid[] = $report->mid;
+                $email[] = $report->email;
+                $phone[] = $report->phone;
+                $name[] = $report->name;
+              }
+              // echo json_encode($dailyReports);
+              $midSet = [];
+              foreach ($mid as $merchandID){
+                $data = [];
+                $data['email'] = $email;
+                $data['today_sales'] = $modal->getDailySale($merchandID); //number of cards sold.
+                $data['total_cards_sold'] = $modal->getTotalSales($merchandID); // total cards sold till now.
+                $data['total_sales_made'] = $modal->getTotalProfit($merchandID); // total profit made today.
+                $data['total_CB'] = $modal->totalCashbackGiven($merchandID); //total cashback given till now.
+                $data['pass_image'] = $modal->getCardImage($merchandID); //The card image;
+                array_push($midSet, $data);
+                $data['mid'][] = $merchandID;
+              }
+                  // echo json_encode($midSet);
+              // echo("<pre>");print_r($midSet);exit();
+            }
+            foreach ($midSet as $key => $value) {
+
+                $p = str_replace('"','',json_encode($value['today_sales']));
+                $t = json_encode($value['total_cards_sold']);
+                $s = json_encode($value['total_sales_made']);
+                $w = str_replace('"','',json_encode($value['total_CB']));
+                $i = str_replace('"','',json_encode($value['pass_image']));
+  
+                foreach ($value['email'] as $to){
+                $message = str_replace('"','', $t) ;
+                $template_loc = fopen("./application/views/merchant/daily_mail.php","r+");
+                $template_read = fread($template_loc, filesize("./application/views/merchant/daily_mail.php"));
+
+                $template_read = str_replace("#today_sales#", $p, $template_read);
+                $template_read = str_replace("#total_cards_sold#", $message, $template_read);
+                $template_read = str_replace("#total_sales_made#", $s, $template_read);
+                $template_read = str_replace("#total_CB#", $w, $template_read);
+                $template_read = str_replace("#IMAGE#", $i, $template_read);
+                 
+                $body = $template_read;  #or directly use $template_read as body
+
+                var_dump($body);
+                 //$mail = $this->sendGridMail($to, $name = NULL, $subject = "Your Daily clubcard report", $body, $bcc = false, $fromname = mail_fromname, $from = mail_from);
+              }
+
+            }
+
+        }
+
+  if (isset($_GET['search']) && $this->filter_input($_GET['search']) == '7'){
+
+      $img_path = 'public/merchantlogos/250/';
+      $weeklyReports = $modal->getEmailForWeeklyReports();
+
+      if ($weeklyReports){
+
+        foreach ($weeklyReports as $weeklyReport){
+          $mid_w[] = $weeklyReport->mid;
+          $email_w[] = $weeklyReport->email;
+          $phone_w[] = $weeklyReport->phone;
+          $name_w[] = $weeklyReport->name;
+        }
+
+        $midSet = [];
+        foreach ($mid_w as $merchantID_w){
+          $data = [];
+          $data['email'] = $email_w;
+
+          $data['pass_image'] = $modal->getCardImage($merchantID_w); //The card image;
+          $data['this_week_sales'] = $modal->getTotalSalesWeekly($merchantID_w);
+          $data['last_week_sales'] = $modal->getLastWeeksTotalSales($merchantID_w);
+          $data['cards_sold_this_week'] = $modal->getNumberOfCardsSoldThisWeek($merchantID_w);
+          $data['cards_sold_last_week'] = $modal->getNumberOfCardsSoldLastWeek($merchantID_w);
+          $data['cashack_this_week'] = $modal->getCashbackThisWeek($merchantID_w);
+          $data['cashack_last_week'] = $modal->getCashbackLastWeek($merchantID_w);
+
+          array_push($midSet, $data);
+          $data['mid'][] = $merchantID_w;
+          // echo("<pre>");print_r($data);exit();
+        }
+      }
+
+      foreach ($midSet as $key => $value) {
+        $pass_image = str_replace('"','',json_encode($value['pass_image']));
+        $this_week_sales = json_encode($value['this_week_sales']);
+        $this_week_sales = json_encode($value['this_week_sales']);
+        $last_week_sales = json_encode($value['last_week_sales']);
+        $cards_sold_this_week = str_replace('"','',json_encode($value['cards_sold_this_week']));
+        $cards_sold_last_week = str_replace('"','',json_encode($value['cards_sold_last_week']));
+        $cashack_this_week = json_encode($value['cashack_this_week']);
+        $cashack_last_week = json_encode($value['cashack_last_week']);
+
+        foreach ($value['email'] as $to){
+        $template_loc = fopen("./application/views/merchant/weekly_mail.php","r+");
+        $template_read = fread($template_loc, filesize("./application/views/merchant/weekly_mail.php"));
+        $template_read = str_replace("#IMAGE#", $pass_image, $template_read);
+        $template_read = str_replace("#this_week_sales#", $this_week_sales, $template_read);
+        $template_read = str_replace("#last_week_sales#", $last_week_sales, $template_read);
+        $template_read = str_replace("#cards_sold_this_week#", $cards_sold_this_week, $template_read);
+        $template_read = str_replace("#cards_sold_last_week#", $cards_sold_last_week, $template_read);
+        $template_read = str_replace("#cashack_this_week#", $cashack_this_week, $template_read);
+        $template_read = str_replace("#cashack_last_week#", $cashack_last_week, $template_read);
+         
+        $body = $template_read;  #or directly use $template_read as body
+
+        var_dump($body);
+       // $mail = $this->sendGridMail($to, $name = NULL, $subject = "Your weekly clubcard report", $body, $bcc = false, $fromname = mail_fromname, $from = mail_from);
+        }
+
+      }
+            // echo("<pre>");print_r($weeklyReports);exit();
+        echo json_encode($data);
+        }
+
+      if (isset($_GET['search']) && $this->filter_input($_GET['search']) == '30'){
+
+        $img_path = 'public/merchantlogos/250/';
+        $monthlyReports = $modal->getEmailForMonthlyReports();
+
+        echo("<pre>");print_r($monthlyReports);exit();
+        if($monthlyReports){
+          foreach ($monthlyReports as $monthlyReport){
+            $mid_M[] = $monthlyReport->mid;
+            $email_M[] = $monthlyReport->email;
+            $phone_M[] = $monthlyReport->phone;
+            $name_M[] = $monthlyReport->name;
+          }
+
+          $midSet = [];
+          foreach ($mid_M as $merchantID_M){
+            $data = [];
+            $data['email'] = $email_M;
+
+            $data['pass_image'] = $modal->getCardImage($merchantID_M); //The card image;
+            $data['this_month_revenue'] = $modal->getTotalRevenueThisMonth($merchantID_M);
+            $data['last_month_revenue'] = $modal->getTotalLastMonthsRevenue($merchantID_M);
+            $data['cards_sold_this_month'] = $modal->getTotalCardsSoldThisMonth($merchantID_M);
+            $data['cashback_this_month'] = $modal->getCashbackGivenThisMonth($merchantID_M);
+            $data['new_customers_this_month'] = $modal->getNewCustomersThisMonth($merchantID_M);
+
+            array_push($midSet, $data);
+            $data['mid'][] = $merchantID_M;
+
+          }
+          echo("<pre>");print_r($midSet);exit();
+        }
+      }
+
+    }
+
+}
+
+

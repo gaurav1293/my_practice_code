@@ -1,0 +1,17 @@
+
+<input type="text" id="phone" name="phone" onkeypress="phoneno()" maxlength="10">
+
+<script>        
+           function phoneno(){          
+            $('#phone').keypress(function(e) {
+                var a = [];
+                var k = e.which;
+
+                for (i = 48; i < 58; i++)
+                    a.push(i);
+
+                if (!(a.indexOf(k)>=0))
+                    e.preventDefault();
+            });
+        }
+       </script>
